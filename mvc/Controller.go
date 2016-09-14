@@ -10,6 +10,7 @@ import (
 
 	"github.com/dereking/grest/config"
 	"github.com/dereking/grest/debug"
+	"github.com/dereking/grest/session"
 	"github.com/dereking/grest/templateManager"
 	"github.com/dereking/grest/utils"
 )
@@ -19,7 +20,14 @@ type Controller struct {
 	ViewBag  map[string]interface{}
 	Response http.ResponseWriter
 	Request  *http.Request
-	//Session http.se
+	Session  *session.SessionBase
+}
+
+func (c *Controller) Initialize(w http.ResponseWriter, r *http.Request) {
+	c.ViewBag = make(map[string]interface{})
+	c.Response = w
+	c.Request = r
+	c.Session = session.GetSessionManager().SessionStart(w, r)
 }
 
 func (c *Controller) GetViewBag() map[string]interface{} {
@@ -30,12 +38,6 @@ func (c *Controller) GetResponse() http.ResponseWriter {
 }
 func (c *Controller) GetRequest() *http.Request {
 	return c.Request
-}
-
-func (c *Controller) Initialize(w http.ResponseWriter, r *http.Request) {
-	c.ViewBag = make(map[string]interface{})
-	c.Response = w
-	c.Request = r
 }
 
 // ViewThisAction return the view of caller.
@@ -123,9 +125,8 @@ func (c *Controller) ClientIPCheck(req *http.Request) error {
 func (c *Controller) JsonResult(o interface{}) *JsonResult {
 	data, _ := json.Marshal(o)
 
-	ret := &JsonResult{}
-	ret.HttpCode = 200
-	ret.Message = data
+	ret := NewJsonResult(200, data)
+	ret.Header["test"] = "msg"
 	return ret
 }
 

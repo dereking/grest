@@ -14,8 +14,8 @@ import (
 // If the preferred section does not have the option, the DEFAULT section is
 // checked fallback.
 type MergedConfig struct {
-	config  *config.Config
-	section string // Check this section first, then fall back to DEFAULT
+	rawConfig *config.Config
+	section   string // Check this section first, then fall back to DEFAULT
 }
 
 var AppConfig *MergedConfig = nil
@@ -24,7 +24,19 @@ func NewEmptyConfig() *MergedConfig {
 	return &MergedConfig{config.NewDefault(), ""}
 }
 
-func LoadConfig(confName string) (*MergedConfig, error) {
+func Initialize(confName string) {
+	c, err := loadConfig(confName)
+	if err != nil {
+		log.Fatalln("initServer err", err)
+	}
+
+	run := c.StringDefault("run", "dev")
+	log.Println("Server Mode:", run)
+
+	c.SetSection(run)
+}
+
+func loadConfig(confName string) (*MergedConfig, error) {
 	var err error
 	confPath := "./"
 	conf, err := config.ReadDefault(path.Join(confPath, confName))
@@ -39,7 +51,7 @@ func LoadConfig(confName string) (*MergedConfig, error) {
 }
 
 func (c *MergedConfig) Raw() *config.Config {
-	return c.config
+	return c.rawConfig
 }
 
 func (c *MergedConfig) SetSection(section string) {
@@ -47,11 +59,11 @@ func (c *MergedConfig) SetSection(section string) {
 }
 
 func (c *MergedConfig) SetOption(name, value string) {
-	c.config.AddOption(c.section, name, value)
+	c.rawConfig.AddOption(c.section, name, value)
 }
 
 func (c *MergedConfig) Int(option string) (result int, found bool) {
-	result, err := c.config.Int(c.section, option)
+	result, err := c.rawConfig.Int(c.section, option)
 	if err == nil {
 		return result, true
 	}
@@ -72,7 +84,7 @@ func (c *MergedConfig) IntDefault(option string, dfault int) int {
 }
 
 func (c *MergedConfig) Bool(option string) (result, found bool) {
-	result, err := c.config.Bool(c.section, option)
+	result, err := c.rawConfig.Bool(c.section, option)
 	if err == nil {
 		return result, true
 	}
@@ -92,7 +104,7 @@ func (c *MergedConfig) BoolDefault(option string, dfault bool) bool {
 }
 
 func (c *MergedConfig) String(option string) (result string, found bool) {
-	if r, err := c.config.String(c.section, option); err == nil {
+	if r, err := c.rawConfig.String(c.section, option); err == nil {
 		return stripQuotes(r), true
 	}
 	return "", false
@@ -106,14 +118,14 @@ func (c *MergedConfig) StringDefault(option, dfault string) string {
 }
 
 func (c *MergedConfig) HasSection(section string) bool {
-	return c.config.HasSection(section)
+	return c.rawConfig.HasSection(section)
 }
 
 // Options returns all configuration option keys.
 // If a prefix is provided, then that is applied as a filter.
 func (c *MergedConfig) Options(prefix string) []string {
 	var options []string
-	keys, _ := c.config.Options(c.section)
+	keys, _ := c.rawConfig.Options(c.section)
 	for _, key := range keys {
 		if strings.HasPrefix(key, prefix) {
 			options = append(options, key)

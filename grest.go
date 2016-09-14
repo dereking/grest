@@ -46,12 +46,11 @@ import (
 
 	_ "golang.org/x/net/netutil"
 
+	redisCache "github.com/dereking/grest/cache/redis"
 	"github.com/dereking/grest/config"
-	"github.com/dereking/grest/mvc"
-	//"github.com/dereking/grest/actionresult"
-	//"github.com/dereking/grest/controller"
-	//"github.com/dereking/grest/controller/ActionFilter"
 	"github.com/dereking/grest/debug"
+	"github.com/dereking/grest/mvc"
+	memsession "github.com/dereking/grest/session/providers/memory"
 )
 
 const (
@@ -66,22 +65,12 @@ type GrestServer struct {
 func NewGrestServer(confName string) *GrestServer {
 	s := &GrestServer{handlerMap: make(map[string]reflect.Type, 0)}
 
-	s.initServer(confName)
+	//必须最先初始化
+	config.Initialize(confName)
+	redisCache.Initialize()
+	memsession.Initialize()
 
 	return s
-}
-
-func (s *GrestServer) initServer(confName string) {
-	c, err := config.LoadConfig(confName)
-	if err != nil {
-		log.Fatalln("initServer err", err)
-	}
-
-	run := c.StringDefault("run", "dev")
-	log.Println("Server Mode:", run)
-
-	c.SetSection(run)
-
 }
 
 func (s *GrestServer) Serve() {
@@ -211,6 +200,11 @@ func (s *GrestServer) stringToReflectField(field reflect.Value, str string) {
 			num, err := strconv.ParseInt(str, 10, 64)
 			if err == nil {
 				field.Set(reflect.ValueOf(num))
+			}
+		case reflect.Bool:
+			b, err := strconv.ParseBool(str)
+			if err == nil {
+				field.Set(reflect.ValueOf(b))
 			}
 		default:
 			log.Println("WARNING: Action parameter : Unsupport field type:", fieldKind)

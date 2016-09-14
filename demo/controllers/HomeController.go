@@ -17,7 +17,8 @@ func (c *HomeController) OnExecuting(a *mvc.ActionExecutingContext) {
 	switch a.ActionName {
 	case "Login":
 	default:
-		a.Result = c.Redirect("/Home/Login")
+		//assign the a.Result will stop the next action executing.
+		//a.Result = c.Redirect("/Home/Login")
 	}
 }
 
@@ -32,7 +33,7 @@ func (c *HomeController) Index(arg struct {
 
 	user := []string{"Jack", "Tomy", "James"}
 
-	c.ViewBag["Title"] = arg.U
+	c.ViewBag["Title"] = arg.U + "session:user=" + c.Session.GetString("user")
 	c.ViewBag["Msg"] = user[2]
 	c.ViewBag["Users"] = user
 
@@ -47,6 +48,7 @@ func (c *HomeController) Test(arg struct {
 	U string
 }) mvc.IActionResult {
 
+	c.Session.Set("user", "ked")
 	c.ViewBag["U"] = arg.U
 	return c.View("Home", "Test")
 }

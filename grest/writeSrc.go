@@ -11,11 +11,14 @@ func writeMain(basePath, projectName string) error {
 package main
 
 import (
+	
+	
 	"flag"
-	"github.com/dereking/grest"
-	"%s/controllers"
 	"log"
 	"reflect"
+
+	"github.com/dereking/grest" 
+	"%s/controllers"   
 )
 
 func main() {
@@ -41,6 +44,7 @@ func writeController(basePath string) error {
 	src := `package controllers
 
 import (
+    "log"
 	"github.com/dereking/grest/mvc" 
 	"github.com/dereking/grest/debug" 
 )
@@ -56,7 +60,11 @@ func (c *HomeController) OnExecuting(a *mvc.ActionExecutingContext) {
 	switch a.ActionName {
 	case "Login":
 	default:
-		a.Result = c.Redirect("/Home/Login")
+		//If you want to check the user's access priveleges, 
+		//you can do it here.
+		//if a.Result != nil, then the current action will not been executed.
+		//a.Result = c.Redirect("/Home/Login")
+		//a.Result = c.HttpForbidden()
 	}
 }
 
@@ -67,6 +75,8 @@ func (c *HomeController) Index(arg struct {
 }) mvc.IActionResult { 
 	debug.Debug(arg)
 
+	c.Session.Set("user", "ked")
+	
 	c.ViewBag["Title"] = arg.U
 	c.ViewBag["cnt"] = 1024
 	c.ViewBag["Msg"] = "你好." + arg.U
@@ -76,11 +86,16 @@ func (c *HomeController) Index(arg struct {
 }
 
 func (c *HomeController) Test(arg struct {
-	U string
+	Id int
 }) mvc.IActionResult {
 
-	c.ViewBag["U"] = arg.U
-	return c.View("Home", "Test") 
+	var dat struct {
+		Users []string
+		Id int
+	}
+	dat.Users = []string{"Jack", "Tomy", "James"}
+	dat.Id = arg.Id
+	return c.JsonResult(dat)
 }`
 	return ioutil.WriteFile(basePath+"controllers/HomeController.go", []byte(src), 0777)
 

@@ -23,6 +23,9 @@ func init() {
 	//allTemplates = make(map[string]*template.Template)
 	PthSep = string(os.PathSeparator)
 	allTemplates = template.New("")
+
+	allTemplates = allTemplates.Funcs(template.FuncMap{"html": html})
+
 	loadTemplateDir("/", "views")
 }
 
