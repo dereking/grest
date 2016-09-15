@@ -8,4 +8,4 @@ a GO lang REST &amp; web framework.
 # start a new project
 > grest -cmd new -n ProjectName
 
-The project will be created at %GOPATH%/src/ProjectName
+The project will be created at $GOPATH/src/ProjectName
