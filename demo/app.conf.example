@@ -1,13 +1,12 @@
-#server working mode:  dev or prod
+#server working mode:  [dev|prod]
 run = dev
-
 
 TemplateDir = views
 TemplateExt = .html
 
 cache.expires=1h
 
-cache.hosts=10.2.8.129:6379
+cache.hosts=127.0.0.1:6379
 cache.redis.password=
 
 cache.redis.maxidle=5
@@ -23,19 +22,19 @@ cache.redis.timeout.read=5000
 cache.redis.timeout.write=5000
 
 
-
-db.mysql.hostWrite=10.2.8.129:3306
+#mysql
+db.mysql.hostWrite=127.0.0.1:3306
 db.mysql.hostWrite.user=greeg
 db.mysql.hostWrite.psw=
-db.mysql.hostWrite.dbName=greeGlobal
+db.mysql.hostWrite.dbName=test
 db.mysql.hostWrite.maxOpenConns=200
 db.mysql.hostWrite.maxIdleConns=100
 
 
-db.mysql.hostRead=10.2.8.129:3306
+db.mysql.hostRead=127.0.0.1:3306
 db.mysql.hostRead.user=greeg
 db.mysql.hostRead.psw=
-db.mysql.hostRead.dbName=greeGlobal
+db.mysql.hostRead.dbName=test
 db.mysql.hostRead.maxOpenConns=200
 db.mysql.hostRead.maxIdleConns=100
 

@@ -51,6 +51,7 @@ import (
 	"github.com/dereking/grest/debug"
 	"github.com/dereking/grest/mvc"
 	memsession "github.com/dereking/grest/session/providers/memory"
+	"github.com/dereking/grest/templateManager"
 )
 
 const (
@@ -69,7 +70,7 @@ func NewGrestServer(confName string) *GrestServer {
 	config.Initialize(confName)
 	redisCache.Initialize()
 	memsession.Initialize()
-
+	templateManager.Initialize()
 	return s
 }
 

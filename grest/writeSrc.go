@@ -167,13 +167,17 @@ func writeModel(basePath string) error {
 }
 
 func writeConf(basePath string) error {
-	src := `#server working mode:  dev or prod
-run = dev 
+	src := `#server working mode:  [dev|prod]
+run = dev
+
+
+TemplateDir = views
+TemplateExt = .html
 
 cache.expires=1h
 
-cache.hosts=10.2.8.129:6379
-cache.redis.password=root
+cache.hosts=127.0.0.1:6379
+cache.redis.password=
 
 cache.redis.maxidle=5
 cache.redis.maxactive=0
@@ -186,35 +190,40 @@ cache.redis.protocol=tcp
 cache.redis.timeout.connect=10000 
 cache.redis.timeout.read=5000
 cache.redis.timeout.write=5000
- 
 
-db.mysql.hostWrite=10.2.8.129:3306
-db.mysql.hostWrite.user=root
-db.mysql.hostWrite.psw=root
-db.mysql.hostWrite.dbName=db
+
+#mysql
+db.mysql.hostWrite=127.0.0.1:3306
+db.mysql.hostWrite.user=greeg
+db.mysql.hostWrite.psw=
+db.mysql.hostWrite.dbName=test
 db.mysql.hostWrite.maxOpenConns=200
 db.mysql.hostWrite.maxIdleConns=100
 
 
-db.mysql.hostRead=10.2.8.129:3306
-db.mysql.hostRead.user=root
-db.mysql.hostRead.psw=root
-db.mysql.hostRead.dbName=db
+db.mysql.hostRead=127.0.0.1:3306
+db.mysql.hostRead.user=greeg
+db.mysql.hostRead.psw=
+db.mysql.hostRead.dbName=test
 db.mysql.hostRead.maxOpenConns=200
 db.mysql.hostRead.maxIdleConns=100
 
 
 
-# 允许访问的ip列表, 如果该项不存在, 则允许所有ip. 
-allow.client.ip = 127.0.0.1;172.16.16.188;
+# 允许访问的ip列表, 如果该项不存在, 则允许所有ip.  127.0.0.1;172.16.16.188;
+allow.client.ip = 127.0.0.3
 
-
+ 
 
 [dev]
 addr = 0.0.0.0:8000
+# Auto reload the modified template from disk?
+AutoReloadTemplate = true
 
 [prod]
-addr = 0.0.0.0:8000`
+addr = 0.0.0.0:8000
+# Auto reload the modified template from disk?
+AutoReloadTemplate = false`
 	return ioutil.WriteFile(basePath+"app.conf", []byte(src), 0777)
 
 }

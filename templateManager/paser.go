@@ -10,26 +10,66 @@ import (
 	"os"
 	"strings"
 
+	"github.com/dereking/grest/config"
 	"github.com/dereking/grest/debug"
+	"github.com/fsnotify/fsnotify"
 )
 
 //var allTemplates map[string]*template.Template
 var allTemplates *template.Template
 
-const suffix = ".HTML" //大写
-var PthSep string
+var suffix string //大写
+var TMPLATE_DIR string
 
-func init() {
-	//allTemplates = make(map[string]*template.Template)
+var PthSep string
+var watcher *fsnotify.Watcher
+
+//Initialize the templates.
+// args
+func Initialize() {
+
+	//TMPLATE_DIR : the directory of templates exists. eg: "views"
+	//suffix : the ext name of the template file. UPCASE. eg: ".HTML"
+	//bMoniteTemplate: bool, Need monite the template file modify, and auto reload it?
+	TMPLATE_DIR = config.AppConfig.StringDefault("TemplateDir", "views")
+	suffix = config.AppConfig.StringDefault("TemplateExt", ".HTML")
+	bMoniteTemplate := config.AppConfig.BoolDefault("AutoReloadTemplate", false)
+
 	PthSep = string(os.PathSeparator)
 	allTemplates = template.New("")
 
 	allTemplates = allTemplates.Funcs(template.FuncMap{"html": html})
 
-	loadTemplateDir("/", "views")
+	if bMoniteTemplate {
+		var err error
+		watcher, err = fsnotify.NewWatcher()
+		if err != nil {
+			log.Fatal(" fsnotify.NewWatcher err", err)
+		}
+
+		loadTemplateDir("/", TMPLATE_DIR, true)
+
+		// Process events
+		go func() {
+			for {
+				select {
+				case ev := <-watcher.Events:
+					debug.Debug("template modified, reload all template.", ev)
+
+					parseTemplate(ev.Name)
+
+				case err := <-watcher.Errors:
+					log.Println("error:", err)
+				}
+			}
+		}()
+	} else {
+
+		loadTemplateDir("/", TMPLATE_DIR, false)
+	}
 }
 
-func loadTemplateDir(templateRoot, dir string) {
+func loadTemplateDir(templateRoot, dir string, bMoniteTemplate bool) {
 
 	fs, err := ioutil.ReadDir(dir)
 	if err != nil {
@@ -37,31 +77,48 @@ func loadTemplateDir(templateRoot, dir string) {
 		return
 	}
 
+	if bMoniteTemplate {
+		//moniter this dir
+		err = watcher.Add(dir)
+		if err != nil {
+			log.Fatal("watcher.Watch err", TMPLATE_DIR, err)
+		}
+	}
+
 	for _, f := range fs {
 		//文件名
 		fn := dir + PthSep + f.Name()
 
-		//模板名字
-		tn := templateRoot + strings.ToLower(f.Name())
-
 		if f.IsDir() {
-			loadTemplateDir(templateRoot+strings.ToLower(f.Name())+"/", fn)
+			loadTemplateDir(templateRoot+strings.ToLower(f.Name())+"/", fn, bMoniteTemplate)
 		} else {
+			parseTemplate(fn)
+		}
+	}
+}
 
-			if strings.HasSuffix(strings.ToUpper(f.Name()), suffix) { //匹配文件
+func parseTemplate(fn string) {
 
-				debug.Debug("Parsing template Name:", tn)
-				t := allTemplates.New(tn)
+	if strings.HasSuffix(strings.ToUpper(fn), strings.ToUpper(suffix)) { //匹配文件
+		//模板名字
+		tn := strings.Replace(fn, TMPLATE_DIR, "", 1)
+		tn = strings.ToLower(strings.Replace(tn, "\\", "/", -1))
 
-				content, err := ioutil.ReadFile(fn)
-				if err != nil {
-					debug.Debug("parse", fn, err)
-				}
-				_, err = t.Parse(string(content))
-				if err != nil {
-					debug.Debug(" * parse ERROR:", fn, err)
-				}
-			}
+		debug.Debug("Parsing template Name:", tn, fn)
+
+		t := allTemplates.Lookup(tn)
+		if t == nil {
+			t = allTemplates.New(tn)
+		}
+
+		content, err := ioutil.ReadFile(fn)
+		if err != nil {
+			debug.Debug("parse", fn, tn, err)
+		}
+
+		_, err = t.Parse(string(content))
+		if err != nil {
+			debug.Debug(" * parse ERROR:", fn, tn, err)
 		}
 	}
 }
