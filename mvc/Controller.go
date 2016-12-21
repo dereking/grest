@@ -29,6 +29,12 @@ func (c *Controller) Initialize(w http.ResponseWriter, r *http.Request) {
 	c.Request = r
 	c.Session = session.GetSessionManager().SessionStart(w, r)
 }
+func (c *Controller) InitializeWS(r *http.Request) {
+	c.ViewBag = make(map[string]interface{})
+	//c.Response = w
+	c.Request = r
+	//c.Session = session.GetSessionManager().SessionStart(w, r)
+}
 
 func (c *Controller) GetViewBag() map[string]interface{} {
 	return c.ViewBag
@@ -85,6 +91,9 @@ func (c *Controller) HttpForbidden() IActionResult {
 	return NewActionResult(http.StatusForbidden, "Forbidden")
 }
 
+func (c *Controller) HttpForbiddenMsg(msg string) IActionResult {
+	return NewActionResult(http.StatusForbidden, msg)
+}
 func (c *Controller) HttpInternalError(msg string) IActionResult {
 
 	return NewActionResult(500, msg)
@@ -126,7 +135,7 @@ func (c *Controller) JsonResult(o interface{}) *JsonResult {
 	data, _ := json.Marshal(o)
 
 	ret := NewJsonResult(200, data)
-	ret.Header["test"] = "msg"
+	//ret.Header["test"] = "msg"
 	return ret
 }
 

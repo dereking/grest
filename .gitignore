@@ -23,3 +23,10 @@ _testmain.go
 *.exe
 *.test
 *.prof
+*.exe~
+
+debug
+*.log
+*.zip
+*.rar
+bin/

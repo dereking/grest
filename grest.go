@@ -37,9 +37,11 @@ s.AddController("hotel", reflect.TypeOf(controller.TestController{}))
 
 import (
 	"fmt"
+	//"io/ioutil"
 	"log"
 	"net"
 	"net/http"
+	//"net/url"
 	"reflect"
 	"strconv"
 	"strings"
@@ -52,6 +54,7 @@ import (
 	"github.com/dereking/grest/mvc"
 	memsession "github.com/dereking/grest/session/providers/memory"
 	"github.com/dereking/grest/templateManager"
+	"golang.org/x/net/websocket"
 )
 
 const (
@@ -91,7 +94,8 @@ func (s *GrestServer) Serve() {
 	http.Handle("/js/", http.FileServer(http.Dir("static")))
 	http.Handle("/img/", http.FileServer(http.Dir("static")))
 	http.Handle("/fonts/", http.FileServer(http.Dir("static")))
-	http.HandleFunc("/", s.ServeHTTP)
+
+	http.HandleFunc("/", s.ServeHTTPDispatch)
 
 	//limit listener
 	//listener = netutil.LimitListener(listener, max)
@@ -115,27 +119,6 @@ func (s *GrestServer) AddController(name string, ctlType reflect.Type) {
 	checkController(ctlType)
 
 }
-
-/*
-func (s *GrestServer) writeActionRes(w http.ResponseWriter,
-	r *http.Request,
-	ar actionresult.IActionResult) {
-
-	if ar != nil {
-
-		w.WriteHeader(ar.GetHttpCode())
-
-		for k, v := range ar.GetHeader() {
-			w.Header().Set(k, v)
-			log.Println(k, v)
-		}
-
-		w.Write(ar.GetResponseContent())
-	} else {
-		w.WriteHeader(200)
-		w.Write([]byte("Action returns Null "))
-	}
-}*/
 
 //从url解析出controller 和action 的名称
 //controller name : lowcase ; 小写
@@ -176,7 +159,11 @@ func (s *GrestServer) parseControllerAction(path string) (controllerName string,
 
 func parseParam(r *http.Request, vals map[string]string) {
 
-	r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		log.Println("grest parseParam err: ", err)
+	}
+
+	log.Println(r.PostForm)
 
 	for k, v := range r.URL.Query() {
 		vals[strings.ToLower(k)] = v[0]
@@ -184,24 +171,98 @@ func parseParam(r *http.Request, vals map[string]string) {
 	for k, v := range r.PostForm {
 		vals[strings.ToLower(k)] = v[0]
 	}
+	/*
+		ct := r.Header.Get("Content-Type")
+		// RFC 2616, section 7.2.1 - empty type
+		//   SHOULD be treated as application/octet-stream
+		if ct == "" {
+			ct = "application/octet-stream"
+		}
+		ct, _, err = mime.ParseMediaType(ct)
+		switch {
+		case ct == "application/json":
+			d, err := ioutil.ReadAll(r.Body)if err != nil {
+				log.Println("grest Body ReadAll err: ", err)
+			} else {
+				//如果
+				vals["json"] = string(d)
+			}
+		}*/
+
 }
+
+//stringToReflectField 把表单\query的数据str转换成对应field类型的值,并赋值给field
 func (s *GrestServer) stringToReflectField(field reflect.Value, str string) {
 	if field.CanSet() {
 		fieldKind := field.Type().Kind()
 		switch fieldKind {
+
 		case reflect.String:
 			field.Set(reflect.ValueOf(str))
-		case reflect.Int, reflect.Int8,
-			reflect.Int16, reflect.Int32:
+
+		case reflect.Int:
 			num, err := strconv.ParseInt(str, 10, 32)
 			if err == nil {
 				field.Set(reflect.ValueOf(int(num)))
+			}
+		case reflect.Int8:
+			num, err := strconv.ParseInt(str, 10, 8)
+			if err == nil {
+				field.Set(reflect.ValueOf(int8(num)))
+			}
+		case reflect.Int16:
+			num, err := strconv.ParseInt(str, 10, 16)
+			if err == nil {
+				field.Set(reflect.ValueOf(int16(num)))
+			}
+		case reflect.Int32:
+			num, err := strconv.ParseInt(str, 10, 32)
+			if err == nil {
+				field.Set(reflect.ValueOf(int32(num)))
 			}
 		case reflect.Int64:
 			num, err := strconv.ParseInt(str, 10, 64)
 			if err == nil {
 				field.Set(reflect.ValueOf(num))
 			}
+
+		case reflect.Uint:
+			num, err := strconv.ParseUint(str, 10, 64)
+			if err == nil {
+				field.Set(reflect.ValueOf(uint(num)))
+			}
+		case reflect.Uint8:
+			num, err := strconv.ParseUint(str, 10, 8)
+			if err == nil {
+				field.Set(reflect.ValueOf(uint8(num)))
+			}
+		case reflect.Uint16:
+			num, err := strconv.ParseUint(str, 10, 16)
+			if err == nil {
+				field.Set(reflect.ValueOf(uint16(num)))
+			}
+		case reflect.Uint32:
+			num, err := strconv.ParseUint(str, 10, 32)
+			if err == nil {
+				field.Set(reflect.ValueOf(uint32(num)))
+			}
+		case reflect.Uint64:
+			num, err := strconv.ParseUint(str, 10, 64)
+			if err == nil {
+				field.Set(reflect.ValueOf(uint64(num)))
+			}
+
+		case reflect.Float32:
+			num, err := strconv.ParseFloat(str, 32)
+			if err == nil {
+				field.Set(reflect.ValueOf(float32(num)))
+			}
+		case reflect.Float64:
+			num, err := strconv.ParseFloat(str, 64)
+			if err == nil {
+				field.Set(reflect.ValueOf(num))
+			}
+
 		case reflect.Bool:
 			b, err := strconv.ParseBool(str)
 			if err == nil {
@@ -261,13 +322,16 @@ func (s *GrestServer) callAction(theControllerReflect reflect.Value,
 	aec := mvc.NewActionExecutingContext(actionName,
 		vals)
 	executeFilterExecuting(theControllerReflect, aec)
+
+	//过滤器是否返回了结果. 如果是, 则停止执行action
 	if aec.Result != nil {
 		return aec.Result
-	} else {
+	} else { //继续执行action
 
-		var args []reflect.Value
 		arg := s.formToActionParameter(theAction, vals)
+
 		//如果action有参数,才传入参数.
+		var args []reflect.Value
 		if arg.Kind() != reflect.Invalid {
 			args = []reflect.Value{arg}
 		}
@@ -283,7 +347,45 @@ func (s *GrestServer) callAction(theControllerReflect reflect.Value,
 	}
 }
 
-func (s *GrestServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+//call the ws action of controller.
+//调用 ws 的 action 函数
+func (s *GrestServer) callActionWS(theControllerReflect reflect.Value,
+	actionName string, theAction reflect.Value,
+	ws *websocket.Conn) {
+
+	defer func() {
+		err := recover()
+		if err != nil {
+			//ret = mvc.HttpInternalError(err)
+			ws.Write([]byte(err.(error).Error()))
+			ws.Close()
+		}
+	}()
+
+	args := make([]reflect.Value, 1)
+	args[0] = reflect.ValueOf(ws)
+
+	//执行 action
+	theAction.Call(args)
+}
+
+//http 请求入口, 根据类型派发到ws和http.
+func (s *GrestServer) ServeHTTPDispatch(w http.ResponseWriter, r *http.Request) {
+
+	debug.Debug(r)
+	debug.Debug(r.Proto)
+	//http.Handle("/ws", websocket.Handler(s.ServeHTTPWS))
+	if len(r.Header.Get("Sec-WebSocket-Version")) > 0 {
+		ws := websocket.Handler(s.serveHTTPWS)
+		ws.ServeHTTP(w, r)
+		return
+	} else {
+		s.serveHTTP(w, r)
+	}
+}
+
+func (s *GrestServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
+
 	//获取controller和action
 	controllerName, actionName := s.parseControllerAction(r.URL.Path)
 	debug.Debug("controllerName=", controllerName)
@@ -291,12 +393,12 @@ func (s *GrestServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	vals := make(map[string]string)
 	parseParam(r, vals)
-	debug.Debug(" = request data:", vals)
+	debug.Debug(" = request data:", len(vals), vals)
 
 	var ar mvc.IActionResult
 	var theController mvc.IController //interface{}
 
-	debug.Debug(s.handlerMap)
+	//debug.Debug(s.handlerMap)
 	//获取 controllerName 对应的 controller
 	ctype := s.handlerMap[controllerName]
 	if ctype != nil {
@@ -305,12 +407,17 @@ func (s *GrestServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		theControllerReflect := reflect.New(ctype)
 		theController = theControllerReflect.Interface().(mvc.IController)
 
+		debug.Debug("call controller.Initialize")
 		initFunc := theControllerReflect.MethodByName("Initialize")
 		initFunc.Call([]reflect.Value{reflect.ValueOf(w), reflect.ValueOf(r)})
 
 		//获取 actionName 对应的 函数.
 		//get the func corresponding to the action name.
 		theAction := findFuncOfActionInController(theControllerReflect, actionName)
+
+		debug.Debug("find controller." + actionName)
+		debug.Debug("executing controller." + actionName)
+
 		if theAction.Kind() != reflect.Invalid {
 			//call the action
 			ar = s.callAction(theControllerReflect, actionName, theAction, vals)
@@ -320,6 +427,7 @@ func (s *GrestServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			c := mvc.NewController()
 			ar = c.View(controllerName, actionName)
 		}
+		debug.Debug("executed controller." + actionName)
 
 	} else {
 		//controller 不存在, 那么返回 template 目录下对应的html 文件
@@ -334,4 +442,43 @@ func (s *GrestServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	//render the actionresult.
 	//controllerContext := mvc.NewControllerContext(theController, r, w)
 	ar.ExecuteResult(theController)
+	debug.Debug("ExecuteResult " + actionName)
+}
+
+// websocket handle, and dispather.
+func (s *GrestServer) serveHTTPWS(ws *websocket.Conn) {
+	//io.Copy(ws, ws)
+	debug.Debug("ws 已连接;", ws)
+
+	//获取controller和action
+	controllerName, actionName := s.parseControllerAction(ws.Request().URL.Path)
+	debug.Debug("controllerName=", controllerName)
+	debug.Debug("actionName=", actionName)
+
+	//获取 controllerName 对应的 controller
+	ctype := s.handlerMap[controllerName]
+	if ctype != nil {
+		// new a  controller
+		theControllerReflect := reflect.New(ctype)
+
+		initFunc := theControllerReflect.MethodByName("InitializeWS")
+		initFunc.Call([]reflect.Value{reflect.ValueOf(ws.Request())})
+
+		//获取 actionName 对应的 函数.
+		//get the func corresponding to the action name.
+		theAction := findFuncOfActionInController(theControllerReflect, actionName)
+		if theAction.Kind() != reflect.Invalid {
+			//call the action
+			s.callActionWS(theControllerReflect, actionName, theAction, ws)
+		} else {
+			//controller 不存在, 那么返回 404
+			ws.WriteClose(404)
+		}
+
+	} else {
+		//controller 不存在, 那么返回 404
+		ws.Write([]byte("Controller not found."))
+		ws.WriteClose(404)
+	}
+
 }

@@ -38,7 +38,7 @@ func Initialize() {
 	PthSep = string(os.PathSeparator)
 	allTemplates = template.New("")
 
-	allTemplates = allTemplates.Funcs(template.FuncMap{"html": html})
+	allTemplates = allTemplates.Funcs(template.FuncMap{"html": templateFunc_html})
 
 	if bMoniteTemplate {
 		var err error

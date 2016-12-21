@@ -32,10 +32,11 @@ func Md5(msg string) string {
 	return hex.EncodeToString(md5Ctx.Sum(nil))
 }
 
+/*
 func GenAppKey(appId string) string {
 	//md5.
 	return string(Md5(fmt.Sprintf("%s_%d%d", appId, 234, 546574)))
-}
+}*/
 
 func GenSessionID() string {
 	t := time.Now().UnixNano()
