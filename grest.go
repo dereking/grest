@@ -94,6 +94,7 @@ func (s *GrestServer) Serve() {
 	http.Handle("/js/", http.FileServer(http.Dir("static")))
 	http.Handle("/img/", http.FileServer(http.Dir("static")))
 	http.Handle("/fonts/", http.FileServer(http.Dir("static")))
+	http.Handle("/public/", http.FileServer(http.Dir("static")))
 
 	http.HandleFunc("/", s.ServeHTTPDispatch)
 

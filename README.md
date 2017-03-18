@@ -21,7 +21,7 @@ The project will be created at $GOPATH/src/ProjectName
 
 # static files
 The directory named "static" is the place which storages the static files.
-The subdirectories "css", "js", "images", "fonts" storage the corresponding static files.;
+The subdirectories "css", "js", "images", "fonts", "public" storage the corresponding static files.;
 
 # controller 
 there are one Filter Function in controller.
@@ -53,4 +53,9 @@ func (c *WsController) Chat(ws *websocket.Conn) {
 # template Function
 * html 
 	输出html代码. 对字符串进行html关键词\标签转义.
-
+* fileSize 
+	输出方便阅读的文件大小字符串。
+* datetime 
+	输出日期时间，2017-3-19 00:08:20格式.
+* add
+	数字加1 

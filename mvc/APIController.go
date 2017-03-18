@@ -2,10 +2,10 @@ package mvc
 
 import (
 	"errors"
-	"log"
 	"strings"
 
 	"github.com/dereking/grest/config"
+	"github.com/dereking/grest/debug"
 	//"github.com/dereking/grest/controller/ActionFilter"
 	"github.com/dereking/grest/utils"
 )
@@ -56,6 +56,6 @@ func (c *APIController) ClientIPCheck() error {
 			return nil
 		}
 	}
-	log.Println("Client IP not allowed", ip, allow)
-	return errors.New("Client IP not allowed")
+	debug.Debug("Client IP not allowed", ip, allow)
+	return errors.New("Client IP not allowed:" + ip)
 }

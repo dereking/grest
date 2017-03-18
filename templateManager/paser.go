@@ -39,6 +39,9 @@ func Initialize() {
 	allTemplates = template.New("")
 
 	allTemplates = allTemplates.Funcs(template.FuncMap{"html": templateFunc_html})
+	allTemplates = allTemplates.Funcs(template.FuncMap{"fileSize": templateFunc_FileSize})
+	allTemplates = allTemplates.Funcs(template.FuncMap{"datetime": templateFunc_DateTime})
+	allTemplates = allTemplates.Funcs(template.FuncMap{"add": templateFunc_add})
 
 	if bMoniteTemplate {
 		var err error

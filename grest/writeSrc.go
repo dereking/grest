@@ -137,7 +137,7 @@ func writeViewHome(basePath string) error {
 						<p>cnt {{ .cnt }}</p>
 						
 						{{range $k, $v := .Users}}
-						    <div>{{$k}} => {{$v}} </div>  
+						    <div>{{$.cnt}} {{$k}} => {{$v}} </div>  
 						{{end}}
 						
 						<button class="btn btn-primary" onclick="alert('你好，世界！');">OK</button>
@@ -277,6 +277,17 @@ func (c *WsController) Chat(ws *websocket.Conn) {
 	}
 }
 <QuoteTag>
+
+
+# template Function
+* html 
+	输出html代码. 对字符串进行html关键词\标签转义.
+* fileSize 
+	输出方便阅读的文件大小字符串。
+* datetime 
+	输出日期时间，2017-3-19 00:08:20格式.
+* add
+	数字加1 
 `
 	src = strings.Replace(src, "<QuoteTag>", "```", -1)
 	return ioutil.WriteFile(basePath+"readme.md", []byte(src), 0777)

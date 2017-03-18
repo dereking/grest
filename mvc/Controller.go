@@ -126,8 +126,8 @@ func (c *Controller) ClientIPCheck(req *http.Request) error {
 			return nil
 		}
 	}
-	log.Println("Client IP not allowed", ip, allow)
-	return errors.New("Client IP not allowed")
+	debug.Debug("Client IP not allowed", ip, allow)
+	return errors.New("Client IP not allowed:" + ip)
 }
 
 //构造jsonResult
@@ -155,5 +155,12 @@ func (c *Controller) JsonAPIErrResult(err error) *JsonResult {
 	ret := &JsonResult{}
 	ret.HttpCode = 200
 	ret.Message = data
+	return ret
+}
+
+//构造 FileResult
+func (c *Controller) FileResult(fielPath string) *FileResult {
+
+	ret := NewFileResult(200, fielPath)
 	return ret
 }
