@@ -27,6 +27,8 @@ func (ar *FileResult) ExecuteResult(c IController) {
 	//c.GetResponse().Header().Set("Content-Type", "application/bin; charset=utf-8")
 	c.GetResponse().Header().Set("Content-Disposition", "attachment; filename="+path.Base(string(ar.Message)))
 
+        c.GetResponse().Header().Set("Content-Type", "application/octet-stream")
+
 	c.GetResponse().Header().Set("Accept-Ranges", "bytes")
 
 	/*
