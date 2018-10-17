@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"time"
 
 	"github.com/dereking/grest/debug"
 	"github.com/dereking/grest/security"
@@ -26,12 +27,15 @@ func newManager(provideName, cookieName string, maxlifetime int64) (*SessionMana
 	if !ok {
 		return nil, fmt.Errorf("session: unknown provide %q (forgotten import?)", provideName)
 	}
-	return &SessionManager{
+	ret := &SessionManager{
 		provider:    provider,
 		cookieName:  cookieName,
 		maxlifetime: maxlifetime,
 		//all: make(map[string]ISessionStore),
-	}, nil
+	}
+
+	ret.startGC()
+	return ret, nil
 }
 
 // Register makes a session provider available by the provided name.
@@ -47,6 +51,7 @@ func Register(name string, provider IProvider) {
 	provides[name] = provider
 }
 
+//get default memory sessionmanager.
 func GetSessionManager() *SessionManager {
 
 	if manager == nil {
@@ -69,9 +74,25 @@ func (manager *SessionManager) SessionStart(w http.ResponseWriter, r *http.Reque
 		session, _ = manager.provider.SessionInit(sid)
 		cookie := http.Cookie{Name: manager.cookieName, Value: url.QueryEscape(sid), Path: "/", HttpOnly: true, MaxAge: int(manager.maxlifetime)}
 		http.SetCookie(w, &cookie)
+
 	} else {
 		sid, _ := url.QueryUnescape(cookie.Value)
 		session, _ = manager.provider.SessionRead(sid)
 	}
 	return
+}
+
+//GC timeout sessions.
+func (manager *SessionManager) startGC() {
+	go func() {
+		timer := time.NewTicker(time.Second * 5)
+		for {
+			select {
+			case <-timer.C:
+				//fmt.Println("Timer has expired.")
+				manager.provider.SessionGC(manager.maxlifetime)
+			}
+		}
+		timer.Stop()
+	}()
 }

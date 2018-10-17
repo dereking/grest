@@ -13,11 +13,13 @@ type SessionBase struct {
 }
 
 func NewSession(sid string) *SessionBase {
-	return &SessionBase{
+	ret := &SessionBase{
 		sid:          sid,
 		TimeAccessed: time.Now(),
 		data:         make(map[interface{}]interface{}),
 	}
+
+	return ret
 }
 
 func (s *SessionBase) SessionID() string {

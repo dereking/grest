@@ -52,6 +52,7 @@ import (
 	"github.com/dereking/grest/config"
 	"github.com/dereking/grest/debug"
 	"github.com/dereking/grest/mvc"
+	"github.com/dereking/grest/session"
 	memsession "github.com/dereking/grest/session/providers/memory"
 	"github.com/dereking/grest/templateManager"
 	"golang.org/x/net/websocket"
@@ -72,7 +73,11 @@ func NewGrestServer(confName string) *GrestServer {
 	//必须最先初始化
 	config.Initialize(confName)
 	redisCache.Initialize()
+
+	//initialize memsession first.
 	memsession.Initialize()
+	session.GetSessionManager()
+
 	templateManager.Initialize()
 	return s
 }
