@@ -14,6 +14,8 @@ var (
 	cmdArgs []string
 )
 
+var _version_ = "1.0.0.0"
+
 func main() {
 
 	if !initFlag() {
@@ -25,10 +27,16 @@ func main() {
 		if len(cmdArgs) > 0 {
 			newProject(cmdArgs[0])
 		}
+	case "version":
+		version()
 	default:
 		usage()
 	}
 
+}
+
+func version() {
+	fmt.Printf("Version: %s", _version_)
 }
 
 func isDirExists(path string) bool {
@@ -41,11 +49,11 @@ func isDirExists(path string) bool {
 	}
 }
 
-func checkGopathAndProjectDir(name string) (string, error) {
+func checkGopathAndProjectDir(name string) (gopath, projname string, er error) {
 
-	gopath := os.Getenv("GOPATH")
+	gopath = os.Getenv("GOPATH")
 	if len(gopath) == 0 {
-		return gopath, errors.New("未设置 GOPTH 环境变量")
+		return gopath, name, errors.New("未设置 GOPTH 环境变量")
 	}
 
 	ps := strings.Split(gopath, ";")
@@ -53,26 +61,33 @@ func checkGopathAndProjectDir(name string) (string, error) {
 		gopath = ps[0]
 	}
 	if !isDirExists(gopath) {
-		return gopath, errors.New("GoPath:" + gopath + "note found")
+		return gopath, name, errors.New("GoPath:" + gopath + "note found")
+	}
+
+	if os.PathSeparator == '/' {
+		projname = strings.Replace(name, "\\", "/", -1)
+	} else if os.PathSeparator == '\\' {
+		projname = strings.Replace(name, "/", "\\", -1)
 	}
 
 	pth := fmt.Sprintf("%s%csrc%c%s", gopath, os.PathSeparator, os.PathSeparator, name)
 
 	if isDirExists(pth) {
-		return gopath, errors.New("该项目已经存在:" + pth)
+		return gopath, projname, errors.New("该项目已经存在:" + pth)
 	}
-	return gopath, nil
+	return gopath, projname, nil
 }
 
 func newProject(name string) {
 
-	gopath, err := checkGopathAndProjectDir(name)
+	gopath, projName, err := checkGopathAndProjectDir(name)
 	if err != nil {
 		panic(err)
 		return
 	}
 
-	basePath := fmt.Sprintf("%s%c%s%c%s%c", gopath, os.PathSeparator, "src", os.PathSeparator, name, os.PathSeparator)
+	basePath := fmt.Sprintf("%s%c%s%c%s%c", gopath,
+		os.PathSeparator, "src", os.PathSeparator, projName, os.PathSeparator)
 
 	fmt.Println("Creating project:", basePath)
 
@@ -80,15 +95,19 @@ func newProject(name string) {
 	os.MkdirAll(basePath+"controllers", 0777)
 	os.MkdirAll(basePath+"models", 0777)
 	os.MkdirAll(basePath+"doc", 0777)
-	os.MkdirAll(basePath+"views/Home", 0777)
-	os.MkdirAll(basePath+"views/Shared", 0777)
+	os.MkdirAll(fmt.Sprintf("%s%s%c%s", basePath, "views", os.PathSeparator, "Home"), 0777)
+	os.MkdirAll(fmt.Sprintf("%s%s%c%s", basePath, "views", os.PathSeparator, "Shared"), 0777)
+
+	fmt.Println("create readme.md    status:", writeReadme(basePath))
+	fmt.Println("create app.conf     status:", writeConf(basePath))
 
 	fmt.Println("create main.go      status:", writeMain(basePath, name))
 	fmt.Println("create controller   status:", writeController(basePath))
-	fmt.Println("create views        status:", writeViewHome(basePath))
 	fmt.Println("create Model        status:", writeModel(basePath))
-	fmt.Println("create app.conf     status:", writeConf(basePath))
-	fmt.Println("create readme.md    status:", writeReadme(basePath))
+
+	fmt.Println("create views        status:", writeViewHome(basePath))
+	fmt.Println("create views        status:", writeViewShared(basePath))
+
 	fmt.Println("create static files status:", writeStatic(basePath))
 
 	fmt.Println("Project Created." + basePath)
@@ -100,8 +119,8 @@ func usage() {
   grest subcmd args
 
 e.g.
-  create a new GREST project in $GOPATH:
-  > grest new projectName
+  create a new GREST project in $GOPATH/subdir/projectName:
+  > grest new subdir/projectName
  
 `)
 }
@@ -113,15 +132,14 @@ func initFlag() bool {
 	flag.Parse()
 
 	args := flag.Args()
-	fmt.Println(args)
 
 	// 要求必须有子命令 以及参数。
 	//格式： grest 子命令 参数
-	if len(args) < 2 {
-		usage()
-		return false
-	} else {
+	if len(args) >= 1 {
 		cmd = args[0]
+	}
+
+	if len(args) >= 2 {
 		cmdArgs = args[1:]
 	}
 	return true

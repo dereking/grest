@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strings"
 )
 
@@ -99,11 +100,36 @@ func (c *HomeController) Test(arg struct {
 	dat.Id = arg.Id
 	return c.JsonResult(dat)
 }`
-	return ioutil.WriteFile(basePath+"controllers/HomeController.go", []byte(src), 0777)
+	return ioutil.WriteFile(
+		fmt.Sprintf("%s%s%c%s", basePath, "controllers", os.PathSeparator, "HomeController.go"),
+		[]byte(src), 0777)
 
 }
 
 func writeViewHome(basePath string) error {
+	src := ` 
+<div class="panel panel-default">
+	<div class="panel-heading">
+		<h3 class="panel-title">REST Server</h3>
+	</div>
+	<div class="panel-body">
+		<p>msg:{{ .Msg }} </p>
+		<p>cnt {{ .cnt }}</p>
+		
+		{{range $k, $v := .Users}}
+		    <div>{{$.cnt}} {{$k}} => {{$v}} </div>  
+		{{end}}
+		
+		<button class="btn btn-primary" onclick="alert('你好，世界！');">OK</button>
+	</div> 
+</div>`
+	return ioutil.WriteFile(
+		fmt.Sprintf("%s%s%c%s%c%s", basePath, "views", os.PathSeparator, "Home", os.PathSeparator, "Index.html"),
+		[]byte(src), 0777)
+
+}
+
+func writeViewShared(basePath string) error {
 	src := `<!DOCTYPE html>
 <html lang="zh-CN">
   <head>
@@ -128,21 +154,7 @@ func writeViewHome(basePath string) error {
 		<div class="row">
 			<div class="col-md-3"></div>
 			<div class="col-md-6">
-				<div class="panel panel-default">
-					<div class="panel-heading">
-						<h3 class="panel-title">REST Server</h3>
-					</div>
-					<div class="panel-body">
-						<p>msg:{{ .Msg }} </p>
-						<p>cnt {{ .cnt }}</p>
-						
-						{{range $k, $v := .Users}}
-						    <div>{{$.cnt}} {{$k}} => {{$v}} </div>  
-						{{end}}
-						
-						<button class="btn btn-primary" onclick="alert('你好，世界！');">OK</button>
-					</div> 
-				</div> 
+				@RenderBody() 
 			</div>
 			<div class="col-md-3"></div>
 		</div>
@@ -154,7 +166,9 @@ func writeViewHome(basePath string) error {
     <script src="/js/bootstrap.min.js"></script>
   </body>
 </html>`
-	return ioutil.WriteFile(basePath+"views/Home/Index.html", []byte(src), 0777)
+	return ioutil.WriteFile(
+		fmt.Sprintf("%s%s%c%s%c%s", basePath, "views", os.PathSeparator, "Shared", os.PathSeparator, "_Layout.html"),
+		[]byte(src), 0777)
 
 }
 
@@ -164,7 +178,9 @@ func writeModel(basePath string) error {
 		"	Name string `json:\"name\"`" +
 		"	Age  int    `json:\"age\"`" +
 		"}"
-	return ioutil.WriteFile(basePath+"models/user.go", []byte(src), 0777)
+	return ioutil.WriteFile(
+		fmt.Sprintf("%s%s%c%s", basePath, "models", os.PathSeparator, "user.go"),
+		[]byte(src), 0777)
 
 }
 

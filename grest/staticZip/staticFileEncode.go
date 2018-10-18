@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
+	"os"
 )
 
 func main() {
@@ -18,13 +19,17 @@ func encodeFileToGoCode(fn string) {
 	//fmt.Println(sEnc)
 
 	src := `package main
+	
 import(
 	"archive/zip"
 	"encoding/base64"
+	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
-	"errors"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 func writeStatic(projectDir string) error{
@@ -49,14 +54,14 @@ func writeStatic(projectDir string) error{
 	if err != nil {
 		return err
 	}
-
-	err = ioutil.WriteFile(projectDir+"/static.zip", []byte(dat), 0777)
+	zipFile := fmt.Sprintf("%s%c%s",projectDir,os.PathSeparator,"static.zip")
+	err = ioutil.WriteFile(zipFile, []byte(dat), 0777)
 	if err != nil {
 		return err
 	} 
-	defer os.Remove(projectDir+"/static.zip")
+	defer os.Remove(zipFile)
 
-	cf, err := zip.OpenReader(projectDir + "/static.zip")
+	cf, err := zip.OpenReader(zipFile)
 
 	if err != nil {
 		return err
@@ -70,9 +75,19 @@ func writeStatic(projectDir string) error{
 		}
 
 		if file.FileInfo().IsDir() {
-			os.MkdirAll(projectDir+"/static/"+file.Name, 0777)
+			os.MkdirAll(
+				fmt.Sprintf("%sstatic%c%s", projectDir,  os.PathSeparator, file.Name), 
+				0777)
 		} else {
-			f, err := os.Create(projectDir + "/static/" + file.Name)
+			fshortName := file.Name
+			if os.PathSeparator=='\\'{
+				fshortName = strings.Replace(file.Name,"/","\\",-1) 
+			}
+			fn := fmt.Sprintf("%s%s%c%s", projectDir,"static",os.PathSeparator , fshortName)
+			
+			os.MkdirAll(filepath.Dir(fn))
+			
+			f, err := os.Create(fn)
 			if err != nil {
 				return err
 			}
@@ -87,7 +102,9 @@ func writeStatic(projectDir string) error{
 	return nil
 }
 	`
-	ioutil.WriteFile("../writeStatic.go", []byte(src), 0777)
 
-	fmt.Println("../writeStatic.go has been wroten.")
+	srcFile := fmt.Sprintf("%s%c%s", "..", os.PathSeparator, "writeStatic.go")
+	ioutil.WriteFile(srcFile, []byte(src), 0777)
+
+	fmt.Println(srcFile + " has been wroten.")
 }
