@@ -7,7 +7,7 @@ package grest
 
 路由规则: /controllerName/actionName
   controllerName 和 actionName 不区分大小写.
-  但是  actionName对应的函数名 必须大写开头(),否则无法找到actionName对应的函数.
+  但是  actionName对应的函数名 必须大写开头,否则无法找到actionName对应的函数.
 
 例如:
 s.AddController("hotel", reflect.TypeOf(controller.TestController{}))
@@ -16,7 +16,7 @@ s.AddController("hotel", reflect.TypeOf(controller.TestController{}))
    /Hotel/InDexFunc
    /Hotel/InDexFunc
    /hoteL/IndexFunc
-   /HoTel/inDexFunc 都会匹配并执行 controller.HotelController.IndexFunc()
+   /HoTel/inDexFunc 都会匹配并执行 controller.TestController.IndexFunc()
 
 最佳实践:
 	s.AddController("hotel", reflect.TypeOf(controller.HotelController{}))
