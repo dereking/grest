@@ -184,6 +184,14 @@ func writeModel(basePath string) error {
 
 }
 
+func writeGoMod(basePath, projName string) error {
+	src := fmt.Sprintf(`module %s`, projName)
+	return ioutil.WriteFile(
+		fmt.Sprintf("%s%s", basePath, "go.mod"),
+		[]byte(src), 0777)
+
+}
+
 func writeConf(basePath string) error {
 	src := `#server working mode:  [dev|prod]
 run = dev

@@ -27,6 +27,10 @@ func main() {
 		if len(cmdArgs) > 0 {
 			newProject(cmdArgs[0])
 		}
+	case "new2":
+		if len(cmdArgs) > 0 {
+			newProject_gomod(cmdArgs[0])
+		}
 	case "version":
 		version()
 	default:
@@ -113,15 +117,53 @@ func newProject(name string) {
 	fmt.Println("Project Created." + basePath)
 }
 
+func newProject_gomod(projName string) {
+
+	basePath := fmt.Sprintf(".%c%s%c", os.PathSeparator, projName, os.PathSeparator)
+
+	fmt.Println("Creating go mod project:", basePath)
+
+	os.MkdirAll(basePath, 0777)
+	os.MkdirAll(basePath+"controllers", 0777)
+	os.MkdirAll(basePath+"models", 0777)
+	os.MkdirAll(basePath+"doc", 0777)
+	os.MkdirAll(fmt.Sprintf("%s%s%c%s", basePath, "views", os.PathSeparator, "Home"), 0777)
+	os.MkdirAll(fmt.Sprintf("%s%s%c%s", basePath, "views", os.PathSeparator, "Shared"), 0777)
+
+	fmt.Println("create readme.md    status:", writeReadme(basePath))
+	fmt.Println("create app.conf     status:", writeConf(basePath))
+
+	fmt.Println("create main.go      status:", writeMain(basePath, projName))
+	fmt.Println("create controller   status:", writeController(basePath))
+	fmt.Println("create Model        status:", writeModel(basePath))
+
+	fmt.Println("create views        status:", writeViewHome(basePath))
+	fmt.Println("create views        status:", writeViewShared(basePath))
+
+	fmt.Println("create static files status:", writeStatic(basePath))
+
+	fmt.Println("create go mod file status:", writeGoMod(basePath, projName))
+
+	fmt.Println("Project Created." + basePath)
+}
+
 func usage() {
 	fmt.Println(
 		`usage:
   grest subcmd args
 
-e.g.
-  create a new GREST project in $GOPATH/subdir/projectName:
-  > grest new subdir/projectName
- 
+subcmd : 
+1. help
+	show this help
+2. new
+	create a new GREST project in $GOPATH/subdir/projectName:
+	> grest new subdir/projectName
+3. new2
+	create a new GREST project in current dir and use go mod, ${projectName}:
+	> grest new2 projectName
+
+4. veriosn
+	show the version
 `)
 }
 

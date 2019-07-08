@@ -30,3 +30,6 @@ debug
 *.zip
 *.rar
 bin/
+
+grest
+!static.zip
