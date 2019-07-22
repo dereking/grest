@@ -38,7 +38,7 @@ s.AddController("hotel", reflect.TypeOf(controller.TestController{}))
 import (
 	"fmt"
 	//"io/ioutil"
-	"log"
+	//"log"
 	"net"
 	"net/http"
 	//"net/url"
@@ -46,11 +46,14 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dereking/grest/log"
+	"go.uber.org/zap"
+
 	_ "golang.org/x/net/netutil"
 
 	redisCache "github.com/dereking/grest/cache/redis"
 	"github.com/dereking/grest/config"
-	"github.com/dereking/grest/debug"
+	//"github.com/dereking/grest/debug"
 	"github.com/dereking/grest/mvc"
 	"github.com/dereking/grest/session"
 	memsession "github.com/dereking/grest/session/providers/memory"
@@ -84,11 +87,11 @@ func NewGrestServer(confName string) *GrestServer {
 
 func (s *GrestServer) Serve() {
 	addr := config.AppConfig.StringDefault("addr", ":8000")
-	log.Println("addr", addr)
+	log.Logger().Info("addr", zap.String("addr", addr))
 
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.Fatalf("Listen: %v", err)
+		log.Logger().Fatal("Listen error: ", zap.Error(err))
 	}
 	defer listener.Close()
 
@@ -106,7 +109,7 @@ func (s *GrestServer) Serve() {
 	//limit listener
 	//listener = netutil.LimitListener(listener, max)
 
-	log.Println("Server running at", listener.Addr())
+	log.Logger().Info("Server running at", zap.String("addr", listener.Addr().String()))
 
 	http.Serve(listener, nil)
 
@@ -114,10 +117,11 @@ func (s *GrestServer) Serve() {
 
 func (s *GrestServer) AddController(name string, ctlType reflect.Type) {
 
-	debug.Debug("注册 controller", name, ctlType)
+	log.Logger().Debug("注册 controller", zap.String("name", name),
+		zap.String("ctlType", ctlType.String()))
 
 	if s.handlerMap[strings.ToLower(name)] != nil {
-		log.Println("WARNING 重复注册 controller", name)
+		log.Logger().Info("WARNING 重复注册 controller", zap.String("name", name))
 	}
 
 	s.handlerMap[strings.ToLower(name)] = ctlType
@@ -166,10 +170,10 @@ func (s *GrestServer) parseControllerAction(path string) (controllerName string,
 func parseParam(r *http.Request, vals map[string]string) {
 
 	if err := r.ParseForm(); err != nil {
-		log.Println("grest parseParam err: ", err)
+		log.Logger().Info("grest parseParam err: ", zap.Error(err))
 	}
 
-	log.Println(r.PostForm)
+	//log.Logger().Info(r.PostForm)
 
 	for k, v := range r.URL.Query() {
 		vals[strings.ToLower(k)] = v[0]
@@ -188,7 +192,7 @@ func parseParam(r *http.Request, vals map[string]string) {
 		switch {
 		case ct == "application/json":
 			d, err := ioutil.ReadAll(r.Body)if err != nil {
-				log.Println("grest Body ReadAll err: ", err)
+				log.Logger().Info("grest Body ReadAll err: ", err)
 			} else {
 				//如果
 				vals["json"] = string(d)
@@ -275,10 +279,11 @@ func (s *GrestServer) stringToReflectField(field reflect.Value, str string) {
 				field.Set(reflect.ValueOf(b))
 			}
 		default:
-			log.Println("WARNING: Action parameter : Unsupport field type:", fieldKind)
+			log.Logger().Warn("WARNING: Action parameter : Unsupport field type:",
+				zap.String("fieldKind", fieldKind.String()))
 		}
 	} else {
-		log.Println("WARNING: Action parameter field name must be start with Upper leter")
+		log.Logger().Warn("WARNING: Action parameter field name must be start with Upper leter")
 	}
 }
 
@@ -345,7 +350,7 @@ func (s *GrestServer) callAction(theControllerReflect reflect.Value,
 		//执行 action
 		rets := theAction.Call(args)
 		if len(rets) != 1 {
-			log.Println("Controller 返回值数目错误", rets)
+			log.Logger().Error("Controller 返回值数目错误", zap.Int("rets", len(rets)))
 		} else {
 			ret = rets[0].Interface().(mvc.IActionResult)
 		}
@@ -378,8 +383,6 @@ func (s *GrestServer) callActionWS(theControllerReflect reflect.Value,
 //http 请求入口, 根据类型派发到ws和http.
 func (s *GrestServer) ServeHTTPDispatch(w http.ResponseWriter, r *http.Request) {
 
-	debug.Debug(r)
-	debug.Debug(r.Proto)
 	//http.Handle("/ws", websocket.Handler(s.ServeHTTPWS))
 	if len(r.Header.Get("Sec-WebSocket-Version")) > 0 {
 		ws := websocket.Handler(s.serveHTTPWS)
@@ -394,17 +397,17 @@ func (s *GrestServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 
 	//获取controller和action
 	controllerName, actionName := s.parseControllerAction(r.URL.Path)
-	debug.Debug("controllerName=", controllerName)
-	debug.Debug("actionName=", actionName)
+	log.Logger().Debug("controllerName=", zap.String("controllerName", controllerName))
+	log.Logger().Debug("actionName=", zap.String("actionName", actionName))
 
 	vals := make(map[string]string)
 	parseParam(r, vals)
-	debug.Debug(" = request data:", len(vals), vals)
+	log.Logger().Debug(" = request data:", zap.Int("vals.len", len(vals)), zap.Any("vals", vals))
 
 	var ar mvc.IActionResult
 	var theController mvc.IController //interface{}
 
-	//debug.Debug(s.handlerMap)
+	//log.Logger().Debug(s.handlerMap)
 	//获取 controllerName 对应的 controller
 	ctype := s.handlerMap[controllerName]
 	if ctype != nil {
@@ -413,7 +416,7 @@ func (s *GrestServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		theControllerReflect := reflect.New(ctype)
 		theController = theControllerReflect.Interface().(mvc.IController)
 
-		debug.Debug("call controller.Initialize")
+		log.Logger().Debug("call controller.Initialize")
 		initFunc := theControllerReflect.MethodByName("Initialize")
 		initFunc.Call([]reflect.Value{reflect.ValueOf(w), reflect.ValueOf(r)})
 
@@ -421,8 +424,8 @@ func (s *GrestServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		//get the func corresponding to the action name.
 		theAction := findFuncOfActionInController(theControllerReflect, actionName)
 
-		debug.Debug("find controller." + actionName)
-		debug.Debug("executing controller." + actionName)
+		log.Logger().Debug("find controller." + actionName)
+		log.Logger().Debug("executing controller." + actionName)
 
 		if theAction.Kind() != reflect.Invalid {
 			//call the action
@@ -433,12 +436,13 @@ func (s *GrestServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 			c := mvc.NewController()
 			ar = c.View(controllerName, actionName)
 		}
-		debug.Debug("executed controller." + actionName)
+		log.Logger().Debug("executed controller." + actionName)
 
 	} else {
 		//controller 不存在, 那么返回 template 目录下对应的html 文件
 		// If action not found , so render the html file in template dir.
-		debug.Debug("返回 template 目录下对应的html 文件", controllerName, actionName)
+		log.Logger().Debug("返回 template 目录下对应的html 文件", zap.String("controllerName", controllerName),
+			zap.String("actionName", actionName))
 		c := mvc.NewController()
 		c.Initialize(w, r)
 		theController = c
@@ -448,18 +452,18 @@ func (s *GrestServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	//render the actionresult.
 	//controllerContext := mvc.NewControllerContext(theController, r, w)
 	ar.ExecuteResult(theController)
-	debug.Debug("ExecuteResult " + actionName)
+	log.Logger().Debug("ExecuteResult " + actionName)
 }
 
 // websocket handle, and dispather.
 func (s *GrestServer) serveHTTPWS(ws *websocket.Conn) {
 	//io.Copy(ws, ws)
-	debug.Debug("ws 已连接;", ws)
+	log.Logger().Debug("ws 已连接;", zap.Any("ws", ws))
 
 	//获取controller和action
 	controllerName, actionName := s.parseControllerAction(ws.Request().URL.Path)
-	debug.Debug("controllerName=", controllerName)
-	debug.Debug("actionName=", actionName)
+	log.Logger().Debug("controllerName=", zap.String("controllerName", controllerName))
+	log.Logger().Debug("actionName=", zap.String("actionName", actionName))
 
 	//获取 controllerName 对应的 controller
 	ctype := s.handlerMap[controllerName]

@@ -33,3 +33,7 @@ bin/
 
 grest
 !static.zip
+
+.vscode/
+
+logs/

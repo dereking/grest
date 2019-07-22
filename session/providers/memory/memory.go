@@ -5,7 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dereking/grest/debug"
+	"github.com/dereking/grest/log"
+	_ "go.uber.org/zap"
+
 	"github.com/dereking/grest/session"
 )
 
@@ -22,7 +24,7 @@ func Initialize() {
 	pder.sessions = make(map[string]*list.Element, 0)
 	session.Register("memory", pder)
 
-	debug.Debug("memory session storage init ok")
+	log.Logger().Info("memory session storage init ok")
 }
 
 func (p *Provider) SessionInit(sid string) (*session.SessionBase, error) {

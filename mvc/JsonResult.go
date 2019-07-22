@@ -1,7 +1,9 @@
 package mvc
 
 import (
-	"fmt"
+	//"fmt"
+	"github.com/dereking/grest/log"
+	"go.uber.org/zap"
 )
 
 type JsonResult struct {
@@ -26,7 +28,7 @@ func (ar *JsonResult) ExecuteResult(c IController) {
 
 	c.GetResponse().WriteHeader(ar.HttpCode)
 
-	fmt.Println("===========", ar.HttpCode, c.GetResponse().Header())
+	log.Logger().Debug("===========", zap.Int("HttpCode", ar.HttpCode), zap.Any("head", c.GetResponse().Header()))
 
 	c.GetResponse().Write(ar.Message)
 }

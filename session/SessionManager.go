@@ -7,7 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dereking/grest/debug"
+	"github.com/dereking/grest/log"
+	"go.uber.org/zap"
+
 	"github.com/dereking/grest/security"
 )
 
@@ -58,7 +60,7 @@ func GetSessionManager() *SessionManager {
 		var err error
 		manager, err = newManager("memory", "gosessionid", 3600)
 		if err != nil {
-			debug.Debug("SessionManager init", err)
+			log.Logger().Error("SessionManager init", zap.Error(err))
 		}
 	}
 

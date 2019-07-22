@@ -3,13 +3,16 @@ package mvc
 import (
 	"encoding/json"
 	"errors"
-	"log"
+	//"log"
 	"net/http"
 	"runtime"
 	"strings"
 
 	"github.com/dereking/grest/config"
-	"github.com/dereking/grest/debug"
+
+	"github.com/dereking/grest/log"
+	"go.uber.org/zap"
+
 	"github.com/dereking/grest/session"
 	"github.com/dereking/grest/templateManager"
 	"github.com/dereking/grest/utils"
@@ -55,14 +58,15 @@ func (c *Controller) ViewThis() IActionResult {
 	//获取此函数调用者的controller name和action name
 	controllerName, actionName := fetchControllerActionName(f.Name())
 
-	debug.Debug("ViewThisAction", controllerName, actionName)
+	log.Logger().Debug("ViewThisAction", zap.String("controllerName", controllerName),
+		zap.String("actionName", actionName))
 
 	return c.View(controllerName, actionName)
 }
 
 func (c *Controller) View(controllerName, actionName string) IActionResult {
 
-	log.Println("Controller.View : ViewBag=", c.ViewBag)
+	log.Logger().Debug("Controller.View : ViewBag=", zap.Any("ViewBag", c.ViewBag))
 
 	ret := NewActionResult(200, "")
 	var err error
@@ -72,7 +76,7 @@ func (c *Controller) View(controllerName, actionName string) IActionResult {
 		ret.Message = []byte(err.Error())
 		return ret
 	}
-	//log.Println(string(content))
+	//log.Logger().Debug(string(content))
 	return ret
 }
 
@@ -126,7 +130,7 @@ func (c *Controller) ClientIPCheck(req *http.Request) error {
 			return nil
 		}
 	}
-	debug.Debug("Client IP not allowed", ip, allow)
+	log.Logger().Debug("Client IP not allowed", zap.String("ip", ip), zap.String("allow", allow))
 	return errors.New("Client IP not allowed:" + ip)
 }
 
@@ -150,7 +154,7 @@ func (c *Controller) JsonAPIErrResult(err error) *JsonResult {
 	jsonErr.Msg = err.Error()
 	data, _ := json.Marshal(jsonErr)
 
-	//log.Println("JsonAPIErrResult", jsonErr, data)
+	//log.Logger().Debug("JsonAPIErrResult", jsonErr, data)
 
 	ret := &JsonResult{}
 	ret.HttpCode = 200

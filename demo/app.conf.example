@@ -4,6 +4,9 @@ run = dev
 TemplateDir = views
 TemplateExt = .html
 
+# 指定模板布局文件, 相对于 TemplateDir 的目录，不以路径分隔符开头
+layout_template = Shared\_Layout.html
+
 cache.expires=1h
 
 cache.hosts=127.0.0.1:6379
@@ -42,8 +45,6 @@ db.mysql.hostRead.maxIdleConns=100
 
 # 允许访问的ip列表, 如果该项不存在, 则允许所有ip.  127.0.0.1;172.16.16.188;
 allow.client.ip = 127.0.0.3
-
- 
 
 [dev]
 addr = 0.0.0.0:8000

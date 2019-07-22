@@ -2,9 +2,12 @@ package config
 
 import (
 	"errors"
-	"log"
+	//"log"
 	"path"
 	"strings"
+
+	"github.com/dereking/grest/log"
+	"go.uber.org/zap"
 
 	"github.com/robfig/config"
 )
@@ -27,11 +30,11 @@ func NewEmptyConfig() *MergedConfig {
 func Initialize(confName string) {
 	c, err := loadConfig(confName)
 	if err != nil {
-		log.Fatalln("initServer err", err)
+		log.Logger().Fatal("initServer err", zap.Error(err))
 	}
 
 	run := c.StringDefault("run", "dev")
-	log.Println("Server Mode:", run)
+	log.Logger().Info("Server Mode:", zap.String("runmod", run))
 
 	c.SetSection(run)
 }
@@ -72,7 +75,7 @@ func (c *MergedConfig) Int(option string) (result int, found bool) {
 	}
 
 	// If it wasn't an OptionError, it must have failed to parse.
-	log.Println("Failed to parse config option", option, "as int:", err)
+	log.Logger().Error("Failed to parse config option as int", zap.String("option", option), zap.Error(err))
 	return 0, false
 }
 
@@ -92,7 +95,7 @@ func (c *MergedConfig) Bool(option string) (result, found bool) {
 		return false, false
 	}
 	// If it wasn't an OptionError, it must have failed to parse.
-	log.Println("Failed to parse config option", option, "as bool:", err)
+	log.Logger().Error("Failed to parse config option as bool:", zap.String("option", option), zap.Error(err))
 	return false, false
 }
 

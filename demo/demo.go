@@ -2,8 +2,11 @@ package main
 
 import (
 	"flag"
-	"log"
+	//"log"
 	"reflect"
+
+	"github.com/dereking/grest/log"
+	"go.uber.org/zap"
 
 	"github.com/dereking/grest"
 	"github.com/dereking/grest/demo/controllers"
@@ -13,7 +16,7 @@ func main() {
 	conf := flag.String("conf", "app.conf", "the conf file in conf DIR for this server.")
 	flag.Parse()
 
-	log.Println("Starting server with config file :", *conf)
+	log.Logger().Info("Starting server with config file :", zap.Any("conf", *conf))
 
 	s := grest.NewGrestServer(*conf)
 

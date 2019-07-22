@@ -1,9 +1,9 @@
 package controllers
 
 import (
-	"log"
+	"github.com/dereking/grest/log"
+	"go.uber.org/zap"
 
-	"github.com/dereking/grest/debug"
 	"github.com/dereking/grest/mvc"
 )
 
@@ -12,7 +12,8 @@ type HomeController struct {
 }
 
 func (c *HomeController) OnExecuting(a *mvc.ActionExecutingContext) {
-	log.Println("HomeController OnExecuting", a.ActionParameters)
+	log.Logger().Info("HomeController OnExecuting",
+		zap.Any("ActionParameters", a.ActionParameters))
 
 	switch a.ActionName {
 	case "Login":
@@ -29,7 +30,7 @@ func (c *HomeController) Index(arg struct {
 	Cnt int
 	Id  int
 }) mvc.IActionResult {
-	debug.Debug(arg)
+	log.Logger().Debug("args", zap.Any("args", arg))
 
 	user := []string{"Jack", "Tomy", "James"}
 

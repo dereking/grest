@@ -2,7 +2,10 @@ package cacheCounter
 
 import (
 	"fmt"
-	"log"
+	//"log"
+
+	"github.com/dereking/grest/log"
+	"go.uber.org/zap"
 
 	"github.com/dereking/grest/cache"
 )

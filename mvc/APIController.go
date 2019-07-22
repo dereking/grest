@@ -4,8 +4,10 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/dereking/grest/log"
+	"go.uber.org/zap"
+
 	"github.com/dereking/grest/config"
-	"github.com/dereking/grest/debug"
 	//"github.com/dereking/grest/controller/ActionFilter"
 	"github.com/dereking/grest/utils"
 )
@@ -56,6 +58,6 @@ func (c *APIController) ClientIPCheck() error {
 			return nil
 		}
 	}
-	debug.Debug("Client IP not allowed", ip, allow)
+	log.Logger().Debug("Client IP not allowed", zap.String("ip", ip), zap.String("allow", allow))
 	return errors.New("Client IP not allowed:" + ip)
 }

@@ -6,12 +6,15 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
-	"log"
 	"os"
 	"strings"
 
 	"github.com/dereking/grest/config"
-	"github.com/dereking/grest/debug"
+	//"github.com/dereking/grest/debug"
+
+	"github.com/dereking/grest/log"
+	"go.uber.org/zap"
+
 	"github.com/fsnotify/fsnotify"
 )
 
@@ -20,6 +23,9 @@ var allTemplates *template.Template
 
 var suffix string //大写
 var TMPLATE_DIR string
+
+var LAYOUT_TEMPLATE string //layout模板路径
+var LAYOUT_DATA string
 
 var PthSep string
 var watcher *fsnotify.Watcher
@@ -33,6 +39,7 @@ func Initialize() {
 	//bMoniteTemplate: bool, Need monite the template file modify, and auto reload it?
 	TMPLATE_DIR = config.AppConfig.StringDefault("TemplateDir", "views")
 	suffix = config.AppConfig.StringDefault("TemplateExt", ".HTML")
+	LAYOUT_TEMPLATE = config.AppConfig.StringDefault("layout_template", "/views/Shared/_Layout.html")
 	bMoniteTemplate := config.AppConfig.BoolDefault("AutoReloadTemplate", false)
 
 	PthSep = string(os.PathSeparator)
@@ -43,11 +50,22 @@ func Initialize() {
 	allTemplates = allTemplates.Funcs(template.FuncMap{"datetime": templateFunc_DateTime})
 	allTemplates = allTemplates.Funcs(template.FuncMap{"add": templateFunc_add})
 
+	//读取layout数据
+	layoutFN := fmt.Sprintf("%s%s%s", TMPLATE_DIR, PthSep, LAYOUT_TEMPLATE)
+	content, err := ioutil.ReadFile(layoutFN)
+	if err != nil {
+		log.Logger().Error("load layout file",
+			zap.String("layoutFN", layoutFN),
+			zap.Error(err))
+	} else {
+		LAYOUT_DATA = string(content)
+	}
+
 	if bMoniteTemplate {
 		var err error
 		watcher, err = fsnotify.NewWatcher()
 		if err != nil {
-			log.Fatal(" fsnotify.NewWatcher err", err)
+			log.Logger().Error(" fsnotify.NewWatcher err", zap.Error(err))
 		}
 
 		loadTemplateDir("/", TMPLATE_DIR, true)
@@ -57,12 +75,13 @@ func Initialize() {
 			for {
 				select {
 				case ev := <-watcher.Events:
-					debug.Debug("template modified, reload all template.", ev)
+					log.Logger().Debug("template modified, reload template:",
+						zap.String("templatename", ev.Name))
 
 					parseTemplate(ev.Name)
 
 				case err := <-watcher.Errors:
-					log.Println("error:", err)
+					log.Logger().Error("error:", zap.Error(err))
 				}
 			}
 		}()
@@ -72,11 +91,12 @@ func Initialize() {
 	}
 }
 
+//遍历模板目录，并进行模板编译。如果需要动态监视模板变动，进行目录监控。
 func loadTemplateDir(templateRoot, dir string, bMoniteTemplate bool) {
 
 	fs, err := ioutil.ReadDir(dir)
 	if err != nil {
-		log.Println("Loading template err:", err)
+		log.Logger().Error("Loading template err:", zap.Error(err))
 		return
 	}
 
@@ -84,7 +104,9 @@ func loadTemplateDir(templateRoot, dir string, bMoniteTemplate bool) {
 		//moniter this dir
 		err = watcher.Add(dir)
 		if err != nil {
-			log.Fatal("watcher.Watch err", TMPLATE_DIR, err)
+			log.Logger().Error("watcher.Watch err",
+				zap.String("TMPLATE_DIR", TMPLATE_DIR),
+				zap.Error(err))
 		}
 	}
 
@@ -93,36 +115,109 @@ func loadTemplateDir(templateRoot, dir string, bMoniteTemplate bool) {
 		fn := dir + PthSep + f.Name()
 
 		if f.IsDir() {
+			//递归子目录遍历
 			loadTemplateDir(templateRoot+strings.ToLower(f.Name())+"/", fn, bMoniteTemplate)
 		} else {
+			//处理当前模板，编译并记录。
 			parseTemplate(fn)
 		}
 	}
+
+	for i, t := range allTemplates.Templates() {
+		log.Logger().Debug("allTemplates", zap.Int("index", i), zap.Any("t", t.Name()))
+	}
+
 }
 
 func parseTemplate(fn string) {
 
 	if strings.HasSuffix(strings.ToUpper(fn), strings.ToUpper(suffix)) { //匹配文件
-		//模板名字
-		tn := strings.Replace(fn, TMPLATE_DIR, "", 1)
+
+		//模板名字 /controller/action.html
+		tn := strings.Replace(fn, TMPLATE_DIR, "", 1) //取相对路径
 		tn = strings.ToLower(strings.Replace(tn, "\\", "/", -1))
 
-		debug.Debug("Parsing template Name:", tn, fn)
+		log.Logger().Debug("Parsing template",
+			zap.String("templateName", tn),
+			zap.String("templateFileName", fn))
 
+		// 忽略 LAYOUT_TEMPLATE， 这个文件不独立添加模板。
+		//if strings.Compare(tn, LAYOUT_TEMPLATE) != 0 {
+
+		//检查模板是否存在，否则新建
 		t := allTemplates.Lookup(tn)
 		if t == nil {
+			log.Logger().Debug("New template", zap.String("templateName", tn))
 			t = allTemplates.New(tn)
 		}
 
-		content, err := ioutil.ReadFile(fn)
+		log.Logger().Debug("parse template", zap.String("tn", tn), zap.String("fn", fn))
+
+		/*log.Logger().Debug("parse template",
+		zap.String("LAYOUT_TEMPLATE", layoutFN), zap.String("fn", fn))
+
+		//Shared目录下的 _Layout 共享模板需要作为模板第一个页面。
+		t1, err := t.ParseFiles(layoutFN, fn)
 		if err != nil {
-			debug.Debug("parse", fn, tn, err)
+			log.Logger().Error(" ***** parse ERROR:",
+				zap.String("filename", fn), zap.Error(err))
 		}
 
-		_, err = t.Parse(string(content))
+		log.Logger().Debug("parsed template", zap.String("t1.Name", t1.Name()))*/
+
+		//编译模板
+
+		content, err := ioutil.ReadFile(fn)
 		if err != nil {
-			debug.Debug(" * parse ERROR:", fn, tn, err)
+			log.Logger().Error("parse", zap.String("fn", fn),
+				zap.String("tn", tn),
+				zap.Error(err))
 		}
+
+		var strBody = ""
+		if !strings.HasPrefix(tn, "/shared/") {
+			layout := strings.Replace(LAYOUT_DATA, "<@body@>", fmt.Sprintf("%s-body", tn), -1)
+			_, err := t.Parse(layout)
+			if err != nil {
+				log.Logger().Error("parse", zap.String("fn", fn),
+					zap.String("tn", tn),
+					zap.Error(err))
+			}
+
+			strBody = fmt.Sprintf("{{ define \"%s-body\" }} %s {{ end }}",
+				tn,
+				string(content))
+
+			if err != nil {
+				log.Logger().Error("parse", zap.String("fn", fn),
+					zap.String("tn", tn),
+					zap.Error(err))
+			}
+		} else { //layout 模板文件需要重新加载所有模板。
+			log.Logger().Info("ignore LAYOUT file, ", zap.String("templateName", tn))
+			strBody = string(content)
+		}
+		_, err = t.Parse(strBody)
+
+		if err != nil {
+			log.Logger().Error("parse", zap.String("fn", fn),
+				zap.String("tn", tn),
+				zap.Error(err))
+		}
+
+		/*
+			//编译模板
+			content, err := ioutil.ReadFile(fn)
+			if err != nil {
+				debug.Debug("parse", fn, tn, err)
+			}
+
+			_, err = t.Parse(string(content))
+
+			if err != nil {
+				debug.Debug(" * parse ERROR:", fn, tn, err)
+			}*/
+
 	}
 }
 
