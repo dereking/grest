@@ -30,6 +30,9 @@ var LAYOUT_DATA string
 var PthSep string
 var watcher *fsnotify.Watcher
 
+const (
+	LAYOUT_BODY_TAG = "{{ @RenderBody() }}"
+)
 //Initialize the templates.
 // args
 func Initialize() {
@@ -129,6 +132,7 @@ func loadTemplateDir(templateRoot, dir string, bMoniteTemplate bool) {
 
 }
 
+//编译指定模板。 fn为模板文件全路径
 func parseTemplate(fn string) {
 
 	if strings.HasSuffix(strings.ToUpper(fn), strings.ToUpper(suffix)) { //匹配文件
@@ -167,36 +171,23 @@ func parseTemplate(fn string) {
 
 		//编译模板
 
-		content, err := ioutil.ReadFile(fn)
+		actionPageContent, err := ioutil.ReadFile(fn)
 		if err != nil {
 			log.Logger().Error("parse", zap.String("fn", fn),
 				zap.String("tn", tn),
 				zap.Error(err))
 		}
 
-		var strBody = ""
-		if !strings.HasPrefix(tn, "/shared/") {
-			layout := strings.Replace(LAYOUT_DATA, "<@body@>", fmt.Sprintf("%s-body", tn), -1)
-			_, err := t.Parse(layout)
-			if err != nil {
-				log.Logger().Error("parse", zap.String("fn", fn),
-					zap.String("tn", tn),
-					zap.Error(err))
-			}
-
-			strBody = fmt.Sprintf("{{ define \"%s-body\" }} %s {{ end }}",
-				tn,
-				string(content))
-
-			if err != nil {
-				log.Logger().Error("parse", zap.String("fn", fn),
-					zap.String("tn", tn),
-					zap.Error(err))
-			}
+		var strBody = string(actionPageContent)
+		//views/shared目录之外的需要替换模板。
+		if strings.HasPrefix(tn, "/shared/") {
+			log.Logger().Info("shared file, ", zap.String("templateName", tn))
 		} else { //layout 模板文件需要重新加载所有模板。
-			log.Logger().Info("ignore LAYOUT file, ", zap.String("templateName", tn))
-			strBody = string(content)
+			strBody  = strings.Replace(LAYOUT_DATA,
+				LAYOUT_BODY_TAG,
+				string(actionPageContent), -1)
 		}
+		//编译
 		_, err = t.Parse(strBody)
 
 		if err != nil {
@@ -228,7 +219,7 @@ func getTemplate(name string) *template.Template {
 
 //Render execute the template.
 // if template not found , renturn nil,error
-func Render(ctlName, actName string, viewBag map[string]interface{}) ([]byte, error) {
+func Render(ctlName, actName string, ViewData map[string]interface{}) ([]byte, error) {
 
 	//tname := fmt.Sprintf("views/%s/%s.html", ctlName, actName)
 	fn := strings.ToLower("/" + ctlName + "/" + actName + ".html")
@@ -254,7 +245,7 @@ func Render(ctlName, actName string, viewBag map[string]interface{}) ([]byte, er
 		*/
 	}
 	b := bytes.NewBuffer(make([]byte, 0))
-	err := t.Execute(b, viewBag)
+	err := t.Execute(b, ViewData)
 	if err != nil {
 		return b.Bytes(), err
 

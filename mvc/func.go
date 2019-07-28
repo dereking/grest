@@ -47,7 +47,7 @@ func HttpInternalError(err interface{}) IActionResult {
 
 //NewController create a controller instance.
 func NewController() *Controller {
-	return &Controller{ViewBag: make(map[string]interface{})}
+	return &Controller{ViewData: make(map[string]interface{})}
 }
 
 //parseControllerName  Get the name of Caller controller and action,

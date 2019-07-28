@@ -1,23 +1,25 @@
-	<div class="container">
-		<div class="row">
-			<div class="col-md-3"></div>
-			<div class="col-md-6">
-				<div class="panel panel-default">
-					<div class="panel-heading">
-						<h3 class="panel-title">REST Server</h3>
-					</div>
-					<div class="panel-body">
-						<p>msg:{{ .Msg }} </p>
-						<p>cnt {{ .cnt }}</p>
-						
-						{{range $k, $v := .Users}}
-						    <div>{{$k}} => {{$v}} </div>  
-						{{end}}
-						
-						<button class="btn btn-primary" onclick="alert('你好，世界！');">OK</button>
-					</div> 
-				</div> 
+{{$title := "hello"}}
+<div class="container">
+	<div class="row">
+		<div class="col-md-3"></div>
+		<div class="col-md-6">
+			<div class="panel panel-default">
+				<div class="panel-heading">
+					<h3 class="panel-title">GREST Server</h3>
+				</div>
+				<div class="panel-body">
+					<p>all:{{ . }} </p>
+					<p>msg:{{ .Msg }} </p>
+					<p>cnt {{ .cnt }}</p>
+					<p>$title {{ $title }}</p>
+					{{range $k, $v := .Users}}
+						<div>{{$k}} => {{$v}} </div>
+					{{end}}
+
+					<button class="btn btn-primary" onclick="alert('你好，世界！');">OK</button>
+				</div>
 			</div>
-			<div class="col-md-3"></div>
 		</div>
+		<div class="col-md-3"></div>
 	</div>
+</div>

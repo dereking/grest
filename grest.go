@@ -121,7 +121,7 @@ func (s *GrestServer) AddController(name string, ctlType reflect.Type) {
 		zap.String("ctlType", ctlType.String()))
 
 	if s.handlerMap[strings.ToLower(name)] != nil {
-		log.Logger().Info("WARNING 重复注册 controller", zap.String("name", name))
+		log.Logger().Warn("WARNING 重复注册 controller", zap.String("name", name))
 	}
 
 	s.handlerMap[strings.ToLower(name)] = ctlType
@@ -170,16 +170,18 @@ func (s *GrestServer) parseControllerAction(path string) (controllerName string,
 func parseParam(r *http.Request, vals map[string]string) {
 
 	if err := r.ParseForm(); err != nil {
-		log.Logger().Info("grest parseParam err: ", zap.Error(err))
+		log.Logger().Error("grest parseParam err: ", zap.Error(err))
 	}
 
 	//log.Logger().Info(r.PostForm)
 
 	for k, v := range r.URL.Query() {
 		vals[strings.ToLower(k)] = v[0]
+		log.Logger().Debug("grest parseParam query: ", zap.String("k",k),zap.Any("v",v))
 	}
 	for k, v := range r.PostForm {
 		vals[strings.ToLower(k)] = v[0]
+		log.Logger().Debug("grest parseParam query: ", zap.String("k",k),zap.Any("v",v))
 	}
 	/*
 		ct := r.Header.Get("Content-Type")
@@ -402,7 +404,11 @@ func (s *GrestServer) serveHTTP(w http.ResponseWriter, r *http.Request) {
 
 	vals := make(map[string]string)
 	parseParam(r, vals)
-	log.Logger().Debug(" = request data:", zap.Int("vals.len", len(vals)), zap.Any("vals", vals))
+	log.Logger().Debug(" = request data:",
+		zap.Any("URL.Query", r.URL.Query() ) ,
+		zap.Any("PostForm",r.PostForm) ,
+		zap.Int("vals.len", len(vals)),
+		zap.Any("vals", vals))
 
 	var ar mvc.IActionResult
 	var theController mvc.IController //interface{}

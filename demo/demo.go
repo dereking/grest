@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	//"log"
 	"reflect"
 
 	"github.com/dereking/grest/log"

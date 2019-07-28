@@ -18,8 +18,11 @@ func (c *HomeController) OnExecuting(a *mvc.ActionExecutingContext) {
 	switch a.ActionName {
 	case "Login":
 	default:
-		//assign the a.Result will stop the next action executing.
+		//If you want to check the user's access priveleges,
+		//you can do it here.
+		//if a.Result != nil, then the current action will not been executed.
 		//a.Result = c.Redirect("/Home/Login")
+		//a.Result = c.HttpForbidden()
 	}
 }
 
@@ -32,11 +35,13 @@ func (c *HomeController) Index(arg struct {
 }) mvc.IActionResult {
 	log.Logger().Debug("args", zap.Any("args", arg))
 
-	user := []string{"Jack", "Tomy", "James"}
+	users := []string{"Jack", "Tomy", "James"}
 
-	c.ViewBag["Title"] = arg.U + "session:user=" + c.Session.GetString("user")
-	c.ViewBag["Msg"] = user[2]
-	c.ViewBag["Users"] = user
+	c.Session.Set("user", "ked")
+
+	c.ViewData["Title"] = arg.U + "session:user=" + c.Session.GetString("user")
+	c.ViewData["Msg"] = users[2]
+	c.ViewData["Users"] = users
 
 	return c.ViewThis()
 }
@@ -46,10 +51,14 @@ func (c *HomeController) Login() mvc.IActionResult {
 }
 
 func (c *HomeController) Test(arg struct {
-	U string
+	Id int
 }) mvc.IActionResult {
 
-	c.Session.Set("user", "ked")
-	c.ViewBag["U"] = arg.U
-	return c.View("Home", "Test")
+	var dat struct {
+		Users []string
+		Id int
+	}
+	dat.Users = []string{"Jack", "Tomy", "James"}
+	dat.Id = arg.Id
+	return c.JsonResult(dat)
 }

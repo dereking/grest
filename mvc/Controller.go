@@ -20,27 +20,27 @@ import (
 
 //Controller , the basic controller class
 type Controller struct {
-	ViewBag  map[string]interface{}
+	ViewData  map[string]interface{}
 	Response http.ResponseWriter
 	Request  *http.Request
 	Session  *session.SessionBase
 }
 
 func (c *Controller) Initialize(w http.ResponseWriter, r *http.Request) {
-	c.ViewBag = make(map[string]interface{})
+	c.ViewData = make(map[string]interface{})
 	c.Response = w
 	c.Request = r
 	c.Session = session.GetSessionManager().SessionStart(w, r)
 }
 func (c *Controller) InitializeWS(r *http.Request) {
-	c.ViewBag = make(map[string]interface{})
+	c.ViewData = make(map[string]interface{})
 	//c.Response = w
 	c.Request = r
 	//c.Session = session.GetSessionManager().SessionStart(w, r)
 }
 
-func (c *Controller) GetViewBag() map[string]interface{} {
-	return c.ViewBag
+func (c *Controller) GetViewData() map[string]interface{} {
+	return c.ViewData
 }
 func (c *Controller) GetResponse() http.ResponseWriter {
 	return c.Response
@@ -58,19 +58,21 @@ func (c *Controller) ViewThis() IActionResult {
 	//获取此函数调用者的controller name和action name
 	controllerName, actionName := fetchControllerActionName(f.Name())
 
-	log.Logger().Debug("ViewThisAction", zap.String("controllerName", controllerName),
-		zap.String("actionName", actionName))
+	log.Logger().Debug("ViewThisAction",
+		zap.String("controllerName", controllerName),
+		zap.String("actionName", actionName),
+		zap.Any("ViewData",c.ViewData))
 
 	return c.View(controllerName, actionName)
 }
 
 func (c *Controller) View(controllerName, actionName string) IActionResult {
 
-	log.Logger().Debug("Controller.View : ViewBag=", zap.Any("ViewBag", c.ViewBag))
+	log.Logger().Debug("Controller.View : ViewData=", zap.Any("ViewData", c.ViewData))
 
 	ret := NewActionResult(200, "")
 	var err error
-	ret.Message, err = templateManager.Render(controllerName, actionName, c.ViewBag)
+	ret.Message, err = templateManager.Render(controllerName, actionName, c.ViewData)
 	if err != nil {
 		ret.HttpCode = 404
 		ret.Message = []byte(err.Error())
