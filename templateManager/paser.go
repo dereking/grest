@@ -33,6 +33,7 @@ var watcher *fsnotify.Watcher
 const (
 	LAYOUT_BODY_TAG = "{{ @RenderBody() }}"
 )
+
 //Initialize the templates.
 // args
 func Initialize() {
@@ -42,7 +43,6 @@ func Initialize() {
 	//bMoniteTemplate: bool, Need monite the template file modify, and auto reload it?
 	TMPLATE_DIR = config.AppConfig.StringDefault("TemplateDir", "views")
 	suffix = config.AppConfig.StringDefault("TemplateExt", ".HTML")
-	LAYOUT_TEMPLATE = config.AppConfig.StringDefault("layout_template", "/views/Shared/_Layout.html")
 	bMoniteTemplate := config.AppConfig.BoolDefault("AutoReloadTemplate", false)
 
 	PthSep = string(os.PathSeparator)
@@ -54,10 +54,10 @@ func Initialize() {
 	allTemplates = allTemplates.Funcs(template.FuncMap{"add": templateFunc_add})
 
 	//读取layout数据
-	layoutFN := fmt.Sprintf("%s%s%s", TMPLATE_DIR, PthSep, LAYOUT_TEMPLATE)
+	layoutFN := fmt.Sprintf("%s%sShared%s_Layout.html", TMPLATE_DIR, PthSep, PthSep)
 	content, err := ioutil.ReadFile(layoutFN)
 	if err != nil {
-		log.Logger().Error("load layout file",
+		log.Logger().Fatal("load layout file",
 			zap.String("layoutFN", layoutFN),
 			zap.Error(err))
 	} else {
@@ -183,7 +183,7 @@ func parseTemplate(fn string) {
 		if strings.HasPrefix(tn, "/shared/") {
 			log.Logger().Info("shared file, ", zap.String("templateName", tn))
 		} else { //layout 模板文件需要重新加载所有模板。
-			strBody  = strings.Replace(LAYOUT_DATA,
+			strBody = strings.Replace(LAYOUT_DATA,
 				LAYOUT_BODY_TAG,
 				string(actionPageContent), -1)
 		}
