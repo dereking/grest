@@ -59,7 +59,7 @@ func init() {
 	// 构造日志
 	logger = zap.New(core, caller, development, filed)
 
-	logger.Info("log 初始化成功")
+	logger.Info("Log initialized.")
 }
 
 func Logger() *zap.Logger {
