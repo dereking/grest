@@ -38,3 +38,7 @@ grest
 
 logs/
 
+demo/demo
+test/go.mod
+test/main.go
+test/test

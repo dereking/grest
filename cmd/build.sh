@@ -15,11 +15,12 @@ elif [ "$(uname -s |grep 'MINGW')" != "" ]; then
   # Windows NT 
   out="$out.exe"
 fi  
+ 
 
 #cd $PRJ_PATH
-$GOROOT/bin/go build -ldflags "-X main._version_='$ver'" -o $out
+go build -ldflags "-X main._version_='$ver'" -o $out
 if [ -f "$GOROOT/bin/$out" ]; then 
   mv "$GOROOT/bin/$out" "$GOROOT/bin/$out.$ver.pre"
 fi
-cp $out $GOROOT/bin
+
  

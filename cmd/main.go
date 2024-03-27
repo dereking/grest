@@ -23,13 +23,15 @@ func main() {
 	}
 
 	switch cmd {
+	// case "new":
+	// 	if len(cmdArgs) > 0 {
+	// 		newProject(cmdArgs[0])
+	// 	}
 	case "new":
 		if len(cmdArgs) > 0 {
-			newProject(cmdArgs[0])
-		}
-	case "new2":
-		if len(cmdArgs) > 0 {
 			newProject_gomod(cmdArgs[0])
+		}else{
+			usage()
 		}
 	case "version":
 		version()
@@ -82,7 +84,7 @@ func checkGopathAndProjectDir(name string) (gopath, projname string, er error) {
 	return gopath, projname, nil
 }
 
-func newProject(name string) {
+func newProject_deprecated(name string) {
 
 	gopath, projName, err := checkGopathAndProjectDir(name)
 	if err != nil {

@@ -1,5 +1,5 @@
 # grest
-a GO lang REST &amp; web framework.
+a GO lang REST &amp; web framework, and provide a cli tool named "grest" to create a RESTful web application.
 
 # install
 > go get github.com/dereking/grest
@@ -9,7 +9,7 @@ a GO lang REST &amp; web framework.
 # start a new project
 usage:
 ``` bash
-  grest SUBCMD ARGS
+  grest <SUBCMD> <ARGS>     
 ```
  e.g.create a new GREST project in $GOPATH:
 
@@ -17,7 +17,7 @@ usage:
    grest new projectName
 ```
 
-The project will be created at $GOPATH/src/ProjectName
+The project `projectName` will be created at $GOPATH/src/projectName
 
 # static files
 The directory named "static" is the place which storages the static files.
